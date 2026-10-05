@@ -7,6 +7,8 @@ using:
 """
 import threading
 import tkinter as tk
+from tkinter import filedialog
+import csv
 from urllib.parse import urlparse
 import customtkinter as ctk
 import requests
@@ -32,6 +34,9 @@ class ScraperApp(ctk.CTk):
         self.geometry("800x600")
         self.grid_rowconfigure(2, weight=1)
         self.grid_columnconfigure(0, weight=1)
+
+        # Store scraped data for exporting to CSV)
+        self.scraped_data = []
 
         # Input Section: URL and Tag
         self.input_frame = ctk.CTkFrame(self)
@@ -73,9 +78,22 @@ class ScraperApp(ctk.CTk):
             self.control_frame,
             text="Start Scraping",
             command=self.start_scrape_thread,
+            fg_color="#28a745",
+            hover_color="#218838",
             height=40,
         )
         self.scrape_btn.pack(side="left", padx=5)
+
+        self.export_btn = ctk.CTkButton(
+            self.control_frame,
+            text="Export to CSV",
+            command=self.export_data,
+            fg_color="#28a745",
+            hover_color="#218838",
+            height=40,
+            state="disabled"  # Initially disabled until data is available
+        )
+        self.export_btn.pack(side="left", padx=5)
 
         self.status_label = ctk.CTkLabel(
             self.control_frame, text="Ready"
@@ -97,7 +115,7 @@ class ScraperApp(ctk.CTk):
             row=0, column=0, padx=15, pady=(10, 2), sticky="w"
         )
 
-        # CustomTkinter Scrollable Text Box
+        # Scrollable Output Box
         self.result_textbox = ctk.CTkTextbox(
             self.output_frame, activate_scrollbars=True
         )
@@ -124,6 +142,10 @@ class ScraperApp(ctk.CTk):
         """
         # Clean text frame for incoming batch
         self.result_textbox.delete("1.0", tk.END)
+        self.scraped_data = []  # Reset scraped data for new session
+
+        # Disable export until new data is available
+        self.export_btn.configure(state="disabled")
 
         url = self.url_entry.get().strip()
         tag = self.tag_entry.get().strip()
@@ -138,7 +160,7 @@ class ScraperApp(ctk.CTk):
         parsed_url = urlparse(url)
         if not all([parsed_url.scheme, parsed_url.netloc]):
             self.log_message(
-                "[Error] Invalid URL structure. Please include http:// or https://"
+                "[Error] Invalid URL. Please include http:// or https://"
             )
             self.update_status("Error", "red")
             return
@@ -187,17 +209,20 @@ class ScraperApp(ctk.CTk):
                 for index, element in enumerate(found_elements, 1):
                     clean_text = element.get_text().strip()
                     if clean_text:  # Exclude printing whitespace-only results
+                        self.scraped_data.append({
+                            "index": index,
+                            "tag": tag,
+                            "text": clean_text
+                        })
                         self.log_message(f"[{index}] {clean_text}\n")
                         self.log_message("-" * 40)
 
-                self.update_status("Success!", "green")
+                if self.scraped_data:
+                    self.export_btn.configure(state="normal")
+                    self.update_status("Success!", "green")
+                else:
+                    self.update_status("Complete! No Content Found", "green")
 
-        except requests.exceptions.Timeout:
-            self.log_message("[Error] The request timed out. Server took too long to reply.")
-            self.update_status("Timeout", "red")
-        except requests.exceptions.HTTPError as http_err:
-            self.log_message(f"[HTTP Error] Server returned code: {http_err.response.status_code}")
-            self.update_status("HTTP Error", "red")
         except Exception as e:
             self.log_message(f"[System Error] Call failed: {str(e)}")
             self.update_status("Failed", "red")
@@ -205,6 +230,61 @@ class ScraperApp(ctk.CTk):
         finally:
             # Re-enable the button safely on operational completion
             self.scrape_btn.configure(state="normal")
+
+    def export_data(self):
+        """
+        Exports the scraped data to a CSV file.
+        """
+        if not self.scraped_data:
+            self.log_message("[Error] No data available to export.")
+            self.update_status("No Data", "red")
+            return
+
+        # Prompt user for save location
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[
+                ("CSV files", "*.csv"),
+                ("TXT files", "*.txt"),
+                ("All files", "*.*")
+                ],
+            title="Save as"
+        )
+
+        if not file_path:
+            self.log_message("[Info] Export cancelled by user.")
+            self.update_status("Export Cancelled", "orange")
+            return
+
+        try:
+            csv_path = file_path.endswith(".csv")
+            txt_path = file_path.endswith(".txt")
+
+            if csv_path or txt_path:
+                with open(file_path, mode="w", newline="", encoding="utf-8") as file:
+                    fieldnames = ["index", "HTML tag", "Content"]
+                    writer = csv.DictWriter(file, fieldnames=fieldnames)
+
+                    writer.writeheader()
+                    for row in self.scraped_data:
+                        writer.writerow({
+                            "index": row["index"],
+                            "HTML tag": row["tag"],
+                            "Content": row["text"]
+                        })
+            else:
+                with open(file_path, mode="w", encoding="utf-8") as txt_file:
+                    txt_file.write(f"Scraped Data from URL: {self.url_entry.get().strip()}\n")
+                    for item in self.scraped_data:
+                        txt_file.write(f"[{item['index']}] <{item['tag']}>:\n{item['text']}\n")
+                        txt_file.write("-" * 40 + "\n")
+
+            self.log_message(f"File saved to {file_path}")
+            self.update_status("Exported!", "green")
+
+        except Exception as e:
+            self.log_message(f"[Error] Failed to export data: {str(e)}")
+            self.update_status("Export Failed", "red")
 
 
 if __name__ == "__main__":
