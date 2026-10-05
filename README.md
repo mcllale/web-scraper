@@ -33,9 +33,9 @@ pip install -r requirements.txt
 python app.py
 ```
 
-![img1](./images/1.png)
-![img2](./images/2.png)
-![img3](./images/3.png)
+![img1](./images/1.PNG)
+![img2](./images/2.PNG)
+![img3](./images/3.PNG)
 
 
 ---
