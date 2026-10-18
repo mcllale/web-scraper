@@ -10,10 +10,14 @@ using:
 ---
 
 ## Features
-- ** Modern Visual Design:** Leverages `CustomTkinter` widgets providing automatic dark/light adaptive system scaling, responsive grid spacing layouts, and sharp iconography components.
-- ** Asynchronous Multithreading:** Delegates intensive HTTP requests directly to dedicated background execution pools to prevent native window thread locks or UI freezing.
-- ** Built-in Network Resiliency:** Safe exception tracking blocks mitigate network disconnect drops, server timeouts, and raw `4xx / 5xx` HTTP failures gracefully.
-- ** Dual-Format Data Export:** Includes a context-aware dataset exporter allowing you to natively save raw results into a clean `.txt` document file block layout or a highly structured `.csv` spreadsheet database.
+- **Modern Visual Design:**   
+  Leverages `CustomTkinter` widgets providing automatic dark/light adaptive system scaling, responsive grid spacing layouts, and sharp iconography components.
+- **Asynchronous Multithreading:**   
+  Delegates intensive HTTP requests directly to dedicated background execution pools to prevent native window thread locks or UI freezing.
+- **Built-in Network Resiliency:**  
+  Safe exception tracking blocks mitigate network disconnect drops, server timeouts, and raw `4xx / 5xx` HTTP failures gracefully.
+- **Dual-Format Data Export:**  
+  Includes a context-aware dataset exporter allowing you to natively save raw results into a clean `.txt` document file block layout or a highly structured `.csv` spreadsheet database.
 
 ---
 
